@@ -3,22 +3,21 @@
 require("../libs.js");
 
 function markFoundItems(pmcData, offraidData, isPlayerScav) {
-    // mark items found in raid
-    for (let offraidItem of offraidData.Inventory.items) {
-        let found = false;
+   // mark items found in raid
+   supLoop: for (let offraidItem of offraidData.Inventory.items) {
+        // let found = false; // useless
 
         // mark new items for PMC, mark all items for scavs
         if (!isPlayerScav) {
             for (let item of pmcData.Inventory.items) {
                 if (offraidItem._id === item._id) {
-                    found = true;
-                    break;
+                    continue supLoop;
                 }
             }
 
-            if (found) {
-                continue;
-            }
+            /* if (found) { // useless
+                 continue;
+             } */
         }
 
         // mark item found in raid
@@ -95,7 +94,7 @@ function deleteInventory(pmcData, sessionID) {
 function saveProgress(offraidData, sessionID) {
     let offraidData = offraidData.profile;
     let pmcData = profile_f.getPmcData(sessionID);
-    let scavData = profile_f.getScavData(sessionID);
+    
     const isPlayerScav = offraidData.isPlayerScav;
     
     // set pmc data
@@ -116,19 +115,18 @@ function saveProgress(offraidData, sessionID) {
     // mark found items and replace item ID's
     offraidData = markFoundItems(pmcData, offraidData, isPlayerScav);
     offraidData.Inventory.items = itm_hf.replaceIDs(offraidData, offraidData.Inventory.items);
-
-    // set profile equipment to the raid equipment
-    if (isPlayerScav) {
-        scavData = setInventory(scavData, offraidData);
-    } else {
-        pmcData = setInventory(pmcData, offraidData);
-    }
-
+    
     // terminate early for player scavs because we don't care about whether they died.
     if (isPlayerScav) {
+        let scavData = profile_f.getScavData(sessionID);
+        scavData = setInventory(scavData, offraidData);
         profile_f.setScavData(scavData, sessionID);
         return;
     }
+    
+    // set profile equipment to the raid equipment
+    pmcData = setInventory(pmcData, offraidData);
+
 
     // remove inventory if player died
     if (offraidData.exit !== "survived" && offraidData.exit !== "runner") {
